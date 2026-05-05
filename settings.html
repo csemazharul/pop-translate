@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PopTranslate</title>
+  <style>
+    :root {
+      --pt-blue: #2563eb;
+      --pt-blue-dark: #1d4ed8;
+      --pt-text: #0f172a;
+      --pt-muted: #64748b;
+      --pt-border: #dbe6f3;
+      --pt-bg: #ffffff;
+      --pt-hover: #eef3fb;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--pt-bg);
+      color: var(--pt-text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+    }
+    body {
+      width: 260px;
+      padding: 14px 14px 12px 14px;
+    }
+    .pt-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .pt-logo {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: var(--pt-blue);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .pt-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .pt-subtitle {
+      color: var(--pt-muted);
+      font-size: 12px;
+      margin: 0 0 10px 0;
+    }
+    .pt-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--pt-muted);
+      margin: 8px 0 6px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .pt-select {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      color: var(--pt-text);
+      background: var(--pt-bg);
+      border: 1px solid var(--pt-border);
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 100ms ease, box-shadow 100ms ease;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%2364748b' d='M6 8L2 4h8z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+    .pt-select:hover {
+      border-color: var(--pt-blue);
+    }
+    .pt-select:focus {
+      border-color: var(--pt-blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="pt-header">
+    <span class="pt-logo">P</span>
+    <span class="pt-title">PopTranslate</span>
+  </div>
+  <p class="pt-subtitle">Highlight any text on a page to see it translated.</p>
+
+  <label class="pt-label" for="pt-source">Source</label>
+  <select id="pt-source" class="pt-select"></select>
+
+  <label class="pt-label" for="pt-target">Translate to</label>
+  <select id="pt-target" class="pt-select"></select>
+
+  <script src="settings.js"></script>
+</body>
+</html>
