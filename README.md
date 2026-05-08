@@ -67,9 +67,8 @@ Available for both source and target:
 
 | Permission | Reason |
 |------------|--------|
-| `activeTab` | Read the current selection on the active tab. |
-| `storage`   | Persist the selected source and target language. |
-| `scripting` | Future-proof injection support per Manifest V3. |
+| `storage`        | Persist the selected source and target language. |
+| `clipboard-write`| Write source text to clipboard via the copy button. |
 | `host_permissions: https://api.mymemory.translated.net/*` | Call the MyMemory translation API directly. |
 
 No analytics, no tracking, no data sent anywhere except your selected text to MyMemory for translation.

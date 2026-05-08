@@ -50,6 +50,41 @@
   letter-spacing: 0.2px;
 }
 
+.pop-translate-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pop-translate-icon-btn {
+  all: unset;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7a8f;
+  border-radius: 4px;
+  transition: background 100ms ease, color 100ms ease, opacity 100ms ease;
+}
+.pop-translate-icon-btn:hover {
+  background: #eef3fb;
+  color: #2563eb;
+}
+.pop-translate-icon-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pop-translate-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.pop-translate-icon-btn.copied {
+  color: #16a34a;
+}
+
 .pop-translate-close {
   all: unset;
   cursor: pointer;

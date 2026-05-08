@@ -2,12 +2,21 @@
   "manifest_version": 3,
   "name": "PopTranslate",
   "version": "1.0.0",
-  "description": "Highlight any text on any webpage to see an instant translation in a small floating popup.",
-  "permissions": ["activeTab", "storage", "scripting"],
+  "description": "Instantly translate any text on any webpage — just highlight it. A clean popup shows the translation in your chosen language within seconds.",
+  "permissions": ["storage", "clipboard-write"],
   "host_permissions": ["https://api.mymemory.translated.net/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_title": "PopTranslate settings",
-    "default_popup": "settings.html"
+    "default_popup": "settings.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
