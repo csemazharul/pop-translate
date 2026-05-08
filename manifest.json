@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PopTranslate",
   "version": "1.0.0",
-  "description": "Instantly translate any text on any webpage — just highlight it. A clean popup shows the translation in your chosen language within seconds.",
+  "description": "Instantly translate any text on any webpage — just highlight it. Popup shows translation in your chosen language in seconds.",
   "permissions": ["storage", "clipboard-write"],
   "host_permissions": ["https://api.mymemory.translated.net/*"],
   "icons": {
