@@ -67,9 +67,8 @@ Notes:
 | `storage`        | Persist the selected languages, the on/off switch and the turned-off sites. |
 | `clipboard-write`| Write the translation to clipboard via the copy button. |
 | `activeTab`      | Read the current tab's site name when you open the toolbar popup, for the **On this site** switch. No install warning. |
-| `host_permissions: https://api.mymemory.translated.net/*` | Call the MyMemory fallback API. |
 
-The Google endpoint (`translate-pa.googleapis.com`) allows extension origins via CORS, so it needs no host permission.
+No host permissions: both the Google endpoint (`translate-pa.googleapis.com`) and MyMemory (`api.mymemory.translated.net`) allow cross-origin requests, so the service worker can call them without extra permissions.
 
 No analytics, no tracking, no data sent anywhere except your selected text to Google Translate (or MyMemory, if Google fails) for translation.
 

@@ -4,7 +4,6 @@
   "version": "1.1.0",
   "description": "Instantly translate any text on any webpage — just highlight it. Popup shows translation in your chosen language in seconds.",
   "permissions": ["storage", "clipboard-write", "activeTab"],
-  "host_permissions": ["https://api.mymemory.translated.net/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
