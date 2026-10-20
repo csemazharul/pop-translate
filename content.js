@@ -1,34 +1,71 @@
 (() => {
-  const LANGS = {
-    'en':    { label: 'English',    badge: 'English'    },
-    'zh-CN': { label: 'Chinese',    badge: '中文'        },
-    'hi':    { label: 'Hindi',      badge: 'हिन्दी'      },
-    'es':    { label: 'Spanish',    badge: 'Español'    },
-    'fr':    { label: 'French',     badge: 'Français'   },
-    'ar':    { label: 'Arabic',     badge: 'العربية'    },
-    'bn':    { label: 'Bengali',    badge: 'বাংলা'      },
-    'ru':    { label: 'Russian',    badge: 'Русский'    },
-    'pt':    { label: 'Portuguese', badge: 'Português'  },
-    'id':    { label: 'Indonesian', badge: 'Indonesia'  },
-    'de':    { label: 'German',     badge: 'Deutsch'    },
-    'ja':    { label: 'Japanese',   badge: '日本語'      },
-    'ur':    { label: 'Urdu',       badge: 'اردو'       },
-    'ko':    { label: 'Korean',     badge: '한국어'      },
-    'it':    { label: 'Italian',    badge: 'Italiano'   },
-    'tr':    { label: 'Turkish',    badge: 'Türkçe'     },
-    'vi':    { label: 'Vietnamese', badge: 'Tiếng Việt' },
-    'th':    { label: 'Thai',       badge: 'ไทย'         },
-    'nl':    { label: 'Dutch',      badge: 'Nederlands' },
-    'pl':    { label: 'Polish',     badge: 'Polski'     }
-  };
-  const DEFAULT_SOURCE = 'en';
+  // From languages.js (loaded first by the manifest).
+  const LANGS = {};
+  (self.POP_TRANSLATE_LANGS || []).forEach(({ code, name, native }) => {
+    LANGS[code] = { label: name, badge: native || name };
+  });
+  if (!LANGS.en) LANGS.en = { label: 'English', badge: 'English' };
+  if (!LANGS.bn) LANGS.bn = { label: 'Bengali', badge: 'বাংলা' };
+  // Google's legacy codes vs the BCP 47 tags speech voices use.
+  const SPEECH_LANG = { iw: 'he', jw: 'jv' };
+  const AUTO = 'auto';
+  const DEFAULT_SOURCE = AUTO;
   const DEFAULT_TARGET = 'bn';
   const MAX_LEN = 200;
   const MIN_LEN = 1;
+  const HOST = location.hostname;
 
   let popup = null;
-  let currentController = null;
+  let currentRequest = 0;
   let lastSelectionText = '';
+  let globalEnabled = true;
+  let siteDisabled = false;
+  let enabled = true;
+
+  function sendSafe(msg) {
+    try {
+      const p = chrome.runtime.sendMessage(msg);
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) {}
+  }
+
+  function applyEnabled() {
+    enabled = globalEnabled && !siteDisabled;
+    sendSafe({ type: 'siteState', off: !enabled });
+    if (!enabled) {
+      removePopup();
+      lastSelectionText = '';
+    }
+  }
+
+  try {
+    chrome.storage.sync.get({ enabled: true, disabledSites: [] }, (res) => {
+      globalEnabled = !res || res.enabled !== false;
+      siteDisabled = !!(res && Array.isArray(res.disabledSites) && res.disabledSites.includes(HOST));
+      applyEnabled();
+    });
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'sync') return;
+      if (!changes.enabled && !changes.disabledSites) return;
+      if (changes.enabled) globalEnabled = changes.enabled.newValue !== false;
+      if (changes.disabledSites) {
+        const list = changes.disabledSites.newValue;
+        siteDisabled = Array.isArray(list) && list.includes(HOST);
+      }
+      applyEnabled();
+    });
+  } catch (_) {}
+
+  function baseLang(code) {
+    return String(code || '').toLowerCase().split('-')[0];
+  }
+
+  // Accepts API codes like "zh" or "en-US" as well as our own keys.
+  function findLang(code) {
+    if (LANGS[code]) return LANGS[code];
+    const key = Object.keys(LANGS).find((k) => baseLang(k) === baseLang(code));
+    return key ? LANGS[key] : null;
+  }
 
   function getLangs() {
     return new Promise((resolve) => {
@@ -36,7 +73,7 @@
         chrome.storage.sync.get(
           { sourceLang: DEFAULT_SOURCE, targetLang: DEFAULT_TARGET },
           (res) => {
-            const src = (res && res.sourceLang && LANGS[res.sourceLang]) ? res.sourceLang : DEFAULT_SOURCE;
+            const src = (res && res.sourceLang && (res.sourceLang === AUTO || LANGS[res.sourceLang])) ? res.sourceLang : DEFAULT_SOURCE;
             const tgt = (res && res.targetLang && LANGS[res.targetLang]) ? res.targetLang : DEFAULT_TARGET;
             resolve({ src, tgt });
           }
@@ -48,10 +85,7 @@
   }
 
   function removePopup() {
-    if (currentController) {
-      try { currentController.abort(); } catch (_) {}
-      currentController = null;
-    }
+    currentRequest++;
     if (popup && popup.parentNode) {
       popup.parentNode.removeChild(popup);
     }
@@ -72,6 +106,13 @@
     btn.disabled = true;
     btn.innerHTML = svg;
     return btn;
+  }
+
+  function pairLabel(srcCode, tgtCode) {
+    const src = findLang(srcCode);
+    const tgt = findLang(tgtCode) || LANGS[DEFAULT_TARGET];
+    const srcName = src ? src.label : String(srcCode || '').toUpperCase();
+    return srcName + ' → ' + tgt.badge;
   }
 
   function buildPopup(originalText, langCode) {
@@ -126,7 +167,7 @@
     root.appendChild(original);
     root.appendChild(translated);
 
-    return { root, translated, soundBtn, searchBtn, copyBtn };
+    return { root, badge, translated, soundBtn, searchBtn, copyBtn };
   }
 
   function positionPopup(root, rect) {
@@ -158,16 +199,20 @@
     root.style.left = left + 'px';
   }
 
-  async function translate(text, srcCode, tgtCode, signal) {
-    const url = 'https://api.mymemory.translated.net/get?q=' +
-      encodeURIComponent(text) +
-      '&langpair=' + encodeURIComponent(srcCode) + '|' + encodeURIComponent(tgtCode);
-    const res = await fetch(url, { signal });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    const out = data && data.responseData && data.responseData.translatedText;
-    if (!out) throw new Error('No translation');
-    return out;
+  // Fetch runs in the service worker: page CSP can't block it.
+  function translate(text, srcCode, tgtCode) {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'translate', text, src: srcCode, tgt: tgtCode }, (res) => {
+          if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+          if (res && res.ok) resolve(res);
+          else reject(new Error((res && res.error) || 'No translation'));
+        });
+      } catch (err) {
+        // Extension reloaded/updated: this content script is orphaned.
+        reject(err);
+      }
+    });
   }
 
   function wireSearch(btn, originalText) {
@@ -179,7 +224,7 @@
     });
   }
 
-  function enableSoundCopy(soundBtn, copyBtn, originalText, translatedText, tgtCode) {
+  function enableSoundCopy(soundBtn, copyBtn, translatedText, tgtCode) {
     soundBtn.disabled = false;
     copyBtn.disabled = false;
 
@@ -187,7 +232,7 @@
       e.stopPropagation();
       try {
         const u = new SpeechSynthesisUtterance(translatedText);
-        u.lang = tgtCode;
+        u.lang = SPEECH_LANG[tgtCode] || tgtCode;
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(u);
       } catch (_) {}
@@ -195,7 +240,7 @@
 
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(originalText).then(() => {
+      navigator.clipboard.writeText(translatedText).then(() => {
         const prev = copyBtn.innerHTML;
         copyBtn.innerHTML = ICON_CHECK;
         copyBtn.classList.add('copied');
@@ -208,10 +253,74 @@
     });
   }
 
+  function googleTranslateUrl(text, srcCode, tgtCode) {
+    return 'https://translate.google.com/?sl=' + encodeURIComponent(srcCode) +
+      '&tl=' + encodeURIComponent(tgtCode) +
+      '&text=' + encodeURIComponent(text) + '&op=translate';
+  }
+
+  function showError(built, selectionText, src, tgt) {
+    const el = built.translated;
+    el.classList.remove('pop-translate-loading');
+    el.classList.add('pop-translate-error');
+    el.textContent = '';
+
+    const msg = document.createElement('div');
+    msg.textContent = 'Translation failed.';
+
+    const row = document.createElement('div');
+    row.className = 'pop-translate-error-actions';
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'pop-translate-text-btn';
+    retryBtn.textContent = 'Retry';
+    retryBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      runTranslation(built, selectionText, src, tgt);
+    });
+
+    const link = document.createElement('a');
+    link.className = 'pop-translate-text-btn';
+    link.href = googleTranslateUrl(selectionText, src, tgt);
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Open in Google Translate';
+    link.addEventListener('click', (e) => e.stopPropagation());
+
+    row.appendChild(retryBtn);
+    row.appendChild(link);
+    el.appendChild(msg);
+    el.appendChild(row);
+  }
+
+  async function runTranslation(built, selectionText, src, tgt) {
+    const myRequest = ++currentRequest;
+    built.translated.classList.remove('pop-translate-error');
+    built.translated.classList.add('pop-translate-loading');
+    built.translated.textContent = 'Translating…';
+
+    try {
+      const res = await translate(selectionText, src, tgt);
+      if (myRequest !== currentRequest) return;
+      built.translated.classList.remove('pop-translate-loading');
+      built.translated.textContent = res.translation;
+      built.badge.textContent = pairLabel(res.src, res.tgt);
+      enableSoundCopy(built.soundBtn, built.copyBtn, res.translation, res.tgt);
+    } catch (err) {
+      if (myRequest !== currentRequest) return;
+      showError(built, selectionText, src, tgt);
+    }
+  }
+
   async function showPopupForSelection(selectionText, rect) {
     removePopup();
+    const myRequest = currentRequest;
 
     const { src, tgt } = await getLangs();
+    // Another selection or a dismiss happened while reading settings.
+    if (myRequest !== currentRequest || !enabled) return;
+
     const built = buildPopup(selectionText, tgt);
     popup = built.root;
     positionPopup(popup, rect);
@@ -221,36 +330,32 @@
     if (src === tgt) {
       built.translated.classList.remove('pop-translate-loading');
       built.translated.textContent = selectionText;
-      enableSoundCopy(built.soundBtn, built.copyBtn, selectionText, selectionText, tgt);
+      enableSoundCopy(built.soundBtn, built.copyBtn, selectionText, tgt);
       return;
     }
 
-    currentController = new AbortController();
-    const mySignal = currentController.signal;
-    const myController = currentController;
+    runTranslation(built, selectionText, src, tgt);
+  }
 
-    try {
-      const translated = await translate(selectionText, src, tgt, mySignal);
-      if (myController !== currentController) return;
-      built.translated.classList.remove('pop-translate-loading');
-      built.translated.classList.remove('pop-translate-error');
-      built.translated.textContent = translated;
-      enableSoundCopy(built.soundBtn, built.copyBtn, selectionText, translated, tgt);
-    } catch (err) {
-      if (err && err.name === 'AbortError') return;
-      if (myController !== currentController) return;
-      built.translated.classList.remove('pop-translate-loading');
-      built.translated.classList.add('pop-translate-error');
-      built.translated.textContent = 'Translation failed.';
-    }
+  // Selecting text while typing (inputs, textareas, rich editors) shouldn't pop up.
+  function isEditable(node) {
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    return !!el.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
   }
 
   function handleMouseUp(e) {
+    if (!enabled) return;
     if (popup && popup.contains(e.target)) return;
+    if (isEditable(e.target) || isEditable(document.activeElement)) return;
 
     setTimeout(() => {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        return;
+      }
+      if (isEditable(sel.anchorNode) || isEditable(sel.focusNode)) {
         return;
       }
       const text = sel.toString().trim();

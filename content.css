@@ -48,6 +48,8 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  margin-right: 8px;
 }
 
 .pop-translate-actions {
@@ -130,4 +132,29 @@
 .pop-translate-error {
   color: #b91c1c;
   font-weight: 400;
+}
+
+.pop-translate-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pop-translate-text-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 3px 10px;
+  border: 1px solid #dbe6f3;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.pop-translate-text-btn:hover {
+  background: #eef3fb;
+  border-color: #2563eb;
 }

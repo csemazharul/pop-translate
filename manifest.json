@@ -3,7 +3,7 @@
   "name": "PopTranslate",
   "version": "1.0.0",
   "description": "Instantly translate any text on any webpage — just highlight it. Popup shows translation in your chosen language in seconds.",
-  "permissions": ["storage", "clipboard-write"],
+  "permissions": ["storage", "clipboard-write", "activeTab"],
   "host_permissions": ["https://api.mymemory.translated.net/*"],
   "icons": {
     "16": "icons/icon16.png",
@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["languages.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle",
       "all_frames": false

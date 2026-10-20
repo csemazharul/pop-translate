@@ -86,6 +86,112 @@
       border-color: var(--pt-blue);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
+    .pt-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      margin-bottom: 4px;
+      border: 1px solid var(--pt-border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .pt-toggle-text {
+      font-weight: 600;
+    }
+    .pt-toggle-hint {
+      display: block;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--pt-muted);
+    }
+    .pt-switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 20px;
+    }
+    .pt-switch input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .pt-switch-track {
+      position: absolute;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 999px;
+      transition: background 120ms ease;
+    }
+    .pt-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+      transition: transform 120ms ease;
+    }
+    .pt-switch input:checked + .pt-switch-track {
+      background: var(--pt-blue);
+    }
+    .pt-switch input:checked + .pt-switch-track::after {
+      transform: translateX(16px);
+    }
+    .pt-switch input:focus-visible + .pt-switch-track {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+    .pt-site-row {
+      display: none;
+      margin-top: 6px;
+    }
+    .pt-site-row.is-visible {
+      display: flex;
+    }
+    .pt-site-host {
+      word-break: break-all;
+    }
+    .pt-langs.is-disabled,
+    .pt-site-row.is-disabled {
+      opacity: 0.5;
+    }
+    .pt-divider {
+      border: 0;
+      border-top: 1px solid var(--pt-border);
+      margin: 14px 0 4px 0;
+    }
+    .pt-links {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pt-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      margin: 0 -8px;
+      color: var(--pt-text);
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    .pt-link:hover,
+    .pt-link:focus-visible {
+      background: var(--pt-hover);
+      color: var(--pt-blue-dark);
+      outline: none;
+    }
+    .pt-link svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      color: var(--pt-muted);
+    }
   </style>
 </head>
 <body>
@@ -93,14 +199,56 @@
     <span class="pt-logo">P</span>
     <span class="pt-title">PopTranslate</span>
   </div>
-  <p class="pt-subtitle">Highlight any text on a page to see it translated.</p>
+  <p class="pt-subtitle">Select text on a web page to see the translation.</p>
 
-  <label class="pt-label" for="pt-source">Source</label>
-  <select id="pt-source" class="pt-select"></select>
+  <label class="pt-toggle-row" for="pt-enabled">
+    <span class="pt-toggle-text">
+      Translate selected text
+      <span id="pt-enabled-hint" class="pt-toggle-hint">The translation shows when you select text</span>
+    </span>
+    <span class="pt-switch">
+      <input type="checkbox" id="pt-enabled" role="switch" checked />
+      <span class="pt-switch-track"></span>
+    </span>
+  </label>
 
-  <label class="pt-label" for="pt-target">Translate to</label>
-  <select id="pt-target" class="pt-select"></select>
+  <label id="pt-site-row" class="pt-toggle-row pt-site-row" for="pt-site-enabled">
+    <span class="pt-toggle-text">
+      Use on this website
+      <span id="pt-site-host" class="pt-toggle-hint pt-site-host"></span>
+    </span>
+    <span class="pt-switch">
+      <input type="checkbox" id="pt-site-enabled" role="switch" checked />
+      <span class="pt-switch-track"></span>
+    </span>
+  </label>
 
+  <div id="pt-langs" class="pt-langs">
+    <label class="pt-label" for="pt-source">Source</label>
+    <select id="pt-source" class="pt-select"></select>
+
+    <label class="pt-label" for="pt-target">Translate to</label>
+    <select id="pt-target" class="pt-select"></select>
+  </div>
+
+  <hr class="pt-divider" />
+  <span class="pt-label">Help us make PopTranslate better</span>
+  <div class="pt-links">
+    <a class="pt-link" href="https://github.com/csemazharul/pop-translate/issues/new?labels=enhancement&title=Feature%20request%3A%20" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4M6.5 15h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>
+      Request a feature
+    </a>
+    <a class="pt-link" href="https://github.com/csemazharul/pop-translate/issues/new?title=Feedback%3A%20" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
+      Send feedback or report a bug
+    </a>
+    <a class="pt-link" href="https://github.com/csemazharul/pop-translate" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 4.5-3.5 3.5 3.5 3.5M10.5 4.5l3.5 3.5-3.5 3.5"/></svg>
+      Contribute on GitHub
+    </a>
+  </div>
+
+  <script src="languages.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>
