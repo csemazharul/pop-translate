@@ -1,3 +1,6 @@
+// Shared language data and helpers (isSingleWord).
+importScripts('languages.js');
+
 const DEFAULT_SOURCE = 'auto';
 const DEFAULT_TARGET = 'bn';
 const REQUEST_TIMEOUT_MS = 8000;
@@ -60,24 +63,81 @@ function guessLang(text) {
   return 'en';
 }
 
-async function fetchJson(url) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+// retryOn5xx: one quick retry for services that sometimes answer 5xx.
+// Errors carry the HTTP status (err.status) so callers can handle e.g. 404.
+async function fetchJson(url, { retryOn5xx = false } = {}) {
+  const get = () => fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  let res = await get();
+  if (retryOn5xx && res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 400));
+    res = await get();
+  }
+  if (!res.ok) {
+    const err = new Error('HTTP ' + res.status);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 
-async function translateGoogle(text, src, tgt) {
+// One selected word (letters, apostrophes, hyphens) gets dictionary details.
+const isSingleWord = self.popTranslateIsSingleWord;
+
+// Google's bilingual dictionary: word types with meanings in the target language.
+function parseDictionary(data) {
+  const groups = Array.isArray(data && data.bilingualDictionary) ? data.bilingualDictionary : [];
+  return groups
+    .filter((g) => g && g.pos && Array.isArray(g.entry) && g.entry.length)
+    .slice(0, 4)
+    .map((g) => ({ pos: g.pos, words: g.entry.slice(0, 4).map((e) => e.word).filter(Boolean) }))
+    .filter((g) => g.words.length);
+}
+
+async function translateGoogle(text, src, tgt, withDictionary = false) {
   const url = 'https://translate-pa.googleapis.com/v1/translate?params.client=gtx' +
     '&query.source_language=' + encodeURIComponent(src) +
     '&query.target_language=' + encodeURIComponent(tgt) +
     '&query.text=' + encodeURIComponent(text) +
-    '&key=' + GOOGLE_PA_KEY + '&data_types=TRANSLATION';
+    '&key=' + GOOGLE_PA_KEY + '&data_types=TRANSLATION' +
+    (withDictionary ? '&data_types=BILINGUAL_DICTIONARY_FULL' : '');
   const data = await fetchJson(url);
   if (!data || typeof data.translation !== 'string' || !data.translation) {
     throw new Error('Google: unexpected response');
   }
   const detected = typeof data.sourceLanguage === 'string' && data.sourceLanguage ? data.sourceLanguage : src;
-  return { translation: data.translation, src: detected };
+  return { translation: data.translation, src: detected, dictionary: withDictionary ? parseDictionary(data) : [] };
+}
+
+// English definitions and examples from dictionaryapi.dev (Wiktionary data, CC BY-SA).
+async function defineEnglish(word) {
+  const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word.trim().toLowerCase());
+  let entries;
+  try {
+    entries = await fetchJson(url, { retryOn5xx: true });
+  } catch (err) {
+    if (err.status === 404) return { found: false };
+    throw err;
+  }
+  if (!Array.isArray(entries) || !entries.length) return { found: false };
+
+  const phonetic = entries.map((e) => e.phonetic).find(Boolean) ||
+    entries.flatMap((e) => e.phonetics || []).map((p) => p.text).find(Boolean) || '';
+  const meanings = [];
+  const seen = new Set();
+  entries.forEach((entry) => {
+    (entry.meanings || []).forEach((m) => {
+      // One meaning per word type keeps the popup short.
+      if (!m.partOfSpeech || seen.has(m.partOfSpeech) || meanings.length >= 3) return;
+      const defs = Array.isArray(m.definitions) ? m.definitions : [];
+      // Skip one-line stubs like "To run." that explain nothing.
+      const useful = defs.filter((d) => d.definition && d.definition.trim().split(/\s+/).length >= 4);
+      const def = useful.find((d) => d.example) || useful[0];
+      if (!def) return;
+      seen.add(m.partOfSpeech);
+      meanings.push({ pos: m.partOfSpeech, definition: def.definition, example: def.example || '' });
+    });
+  });
+  return { found: meanings.length > 0, word: entries[0].word || word, phonetic, meanings };
 }
 
 async function translateMyMemory(text, src, tgt) {
@@ -116,6 +176,21 @@ async function translate(text, src, tgt) {
   }
 }
 
+// Loaded on demand from the popup's word details button. src/tgt are the
+// languages the translation actually used. Fails only if both sources fail.
+async function getWordDetails(word, src, tgt) {
+  if (!isSingleWord(word)) return { dictionary: [], definition: null };
+  const [dict, def] = await Promise.allSettled([
+    translateGoogle(word, src, tgt, true),
+    sameLang(src, 'en') ? defineEnglish(word) : Promise.resolve(null),
+  ]);
+  if (dict.status === 'rejected' && def.status === 'rejected') throw dict.reason;
+  return {
+    dictionary: dict.status === 'fulfilled' ? dict.value.dictionary : [],
+    definition: def.status === 'fulfilled' ? def.value : null,
+  };
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg) return false;
 
@@ -125,6 +200,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.action.setBadgeText({ tabId: sender.tab.id, text: msg.off ? 'OFF' : '' });
     }
     return false;
+  }
+
+  if (msg.type === 'wordDetails') {
+    getWordDetails(String(msg.text || ''), msg.src, msg.tgt)
+      .then((result) => sendResponse(Object.assign({ ok: true }, result)))
+      .catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
+    return true;
   }
 
   if (msg.type === 'translate') {

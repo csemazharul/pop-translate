@@ -258,3 +258,28 @@ self.POP_TRANSLATE_LANGS = [
 self.POP_TRANSLATE_POPULAR = [
   'en', 'bn', 'hi', 'ur', 'ar', 'zh-CN', 'zh-TW', 'es', 'fr', 'de', 'ru', 'pt', 'ja', 'ko', 'id', 'ms', 'tr', 'it', 'vi', 'th', 'nl', 'pl', 'uk', 'fa', 'ne', 'as', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'si', 'or', 'my'
 ];
+
+// Other common names people search for (matched by the settings search box).
+self.POP_TRANSLATE_ALIASES = {
+  'bn': ['Bangla'],
+  'zh-CN': ['Mandarin'],
+  'zh-TW': ['Mandarin', 'Taiwanese'],
+  'tl': ['Tagalog'],
+  'fa': ['Farsi'],
+  'my': ['Burmese'],
+  'km': ['Cambodian'],
+  'si': ['Sinhalese'],
+  'id': ['Bahasa Indonesia'],
+  'ms': ['Bahasa Melayu'],
+  'pa': ['Panjabi'],
+  'nl': ['Flemish'],
+  'ug': ['Uighur'],
+  'ckb': ['Sorani'],
+  'ku': ['Kurmanji']
+};
+
+// One selected "word": letters (any script), apostrophes, hyphens. Shared by the
+// content script and the service worker (via importScripts).
+self.popTranslateIsSingleWord = function (text) {
+  return /^[\p{L}\p{M}'’-]{1,40}$/u.test(String(text || '').trim());
+};

@@ -8,6 +8,8 @@ A tiny Chrome extension that shows an instant translation in a floating popup wh
 - **Engine:** Google Translate, with [MyMemory](https://mymemory.translated.net) as automatic fallback
 - **On/off switch:** pause the selection popup everywhere or just on the current site (icon shows an `OFF` badge)
 - **Stays out of your way:** never pops up when you select text inside inputs, text areas or rich-text editors
+- **Word details:** select one word and click the 📖 button to see its word type (noun, verb…) with meanings in your language, plus an English definition, example and pronunciation for English words
+- **Ask AI:** click ✨ to open ChatGPT, Claude, Grok or Google AI Mode with a ready-made question that explains the grammar of the selected sentence (or the meaning of the word) in your language
 - **Stack:** Pure vanilla JS, Manifest V3, no external libraries
 
 ## Install (developer mode)
@@ -23,7 +25,7 @@ A tiny Chrome extension that shows an instant translation in a floating popup wh
 ## Usage
 
 1. Visit any webpage (Wikipedia, Google, YouTube, Twitter — anything).
-2. **Highlight a word or short phrase.**
+2. **Select a word, a sentence or a paragraph.**
 3. A small blue/white popup appears just below the selection with:
    - the original text
    - a language badge showing the detected source and the target (e.g. **English → বাংলা**)
@@ -31,6 +33,27 @@ A tiny Chrome extension that shows an instant translation in a floating popup wh
 4. Click anywhere outside the popup, press **Esc**, or click the **×** button to dismiss it.
 
 If translation fails, the popup offers **Retry** and **Open in Google Translate**.
+
+## Word details
+
+When you select **one word**, the popup shows a **Word details** button (book icon, next to the speaker). Click it to see:
+
+- **Word types with meanings** in your target language (e.g. *verb* — চালান, চলা; *noun* — ছুট), from Google's dictionary data.
+- For **English words**: the pronunciation (IPA), one short definition and an example sentence per word type, from [Wiktionary](https://en.wiktionary.org) via the free [Free Dictionary API](https://dictionaryapi.dev). If that service is down, the popup simply leaves the definitions out.
+
+Details load only when you click the button, and a second click hides them again. Sentences don't show the button.
+
+## Ask AI
+
+Click the **✨ Ask AI** button in the popup and pick **ChatGPT**, **Claude**, **Grok** or **Google AI Mode**. A new tab opens with a ready-made question, for example:
+
+> Explain the grammar of this English sentence in simple words. Write your answer in Bengali. Include: the tense, the sentence structure (subject, verb, object), and the role of each word or phrase.
+>
+> "She has been running every morning."
+
+For one word, it asks for the meaning, word type and example sentences instead. The answer language is your **Translate to** language. The menu marks the AI you used last.
+
+Notes: Claude and Grok need you to be logged in. The pre-filled question uses each site's `?q=` link, which is not an official API; if a site changes it, the site still opens with an empty message box.
 
 ## Changing source / target language
 
@@ -54,7 +77,7 @@ The toolbar popup links to [feature requests](https://github.com/csemazharul/pop
 
 ## Supported languages
 
-Every language Google Translate supports: 248 as source, 249 as target (Chinese (Traditional) is target-only). The list lives in `languages.js`, shared by the content script and the settings popup. Each dropdown shows a **Popular** group first (English, Bengali, Hindi, Urdu, Arabic, Chinese, major European and South/Southeast Asian languages), then **All languages** A–Z. Tip: with a dropdown open, type a language name to jump to it.
+Every language Google Translate supports: 248 as source, 249 as target (Chinese (Traditional) is target-only). The list lives in `languages.js`, shared by the content script and the settings popup. Each language picker shows a **Popular** group first (English, Bengali, Hindi, Urdu, Arabic, Chinese, major European and South/Southeast Asian languages), then **All languages** A–Z. Type in the picker's search box to filter by English name, native name, common alternative name (e.g. *Bangla*, *Farsi*) or code; use ↑/↓ and Enter to pick, Esc to close.
 
 Notes:
 - The speak button uses your system's voices, so rarer languages may stay silent.
@@ -68,14 +91,14 @@ Notes:
 | `clipboard-write`| Write the translation to clipboard via the copy button. |
 | `activeTab`      | Read the current tab's site name when you open the toolbar popup, for the **On this site** switch. No install warning. |
 
-No host permissions: both the Google endpoint (`translate-pa.googleapis.com`) and MyMemory (`api.mymemory.translated.net`) allow cross-origin requests, so the service worker can call them without extra permissions.
+No host permissions: the Google endpoint (`translate-pa.googleapis.com`), MyMemory (`api.mymemory.translated.net`) and the Free Dictionary API (`api.dictionaryapi.dev`) all allow cross-origin requests, so the service worker can call them without extra permissions.
 
 No analytics, no tracking, no data sent anywhere except your selected text to Google Translate (or MyMemory, if Google fails) for translation.
 
 ## Limits
 
 - Google is tried first. If it fails, MyMemory is used; its free tier allows roughly **5,000 characters per IP per day**. If both fail the popup shows "Translation failed."
-- Selections longer than 200 characters are ignored (to keep things snappy and avoid quota burn).
+- Selections up to 1,500 characters (several paragraphs) are translated; long translations scroll inside the popup. Longer selections show a short message with an **Open in Google Translate** button. The limit keeps each request under Google's URL size limit, even for scripts like Bengali that take more space.
 - If you pick a source that doesn't match what you actually highlighted, result quality drops.
 
 ## File map

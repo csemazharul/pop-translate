@@ -86,6 +86,70 @@
       border-color: var(--pt-blue);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
+    .pt-picker-btn {
+      display: block;
+      text-align: left;
+      font-family: inherit;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pt-picker-btn[aria-expanded="true"] {
+      border-color: var(--pt-blue);
+    }
+    .pt-picker-panel {
+      margin-top: 4px;
+      border: 1px solid var(--pt-border);
+      border-radius: 8px;
+      background: var(--pt-bg);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+      overflow: hidden;
+    }
+    .pt-picker-panel[hidden] {
+      display: none;
+    }
+    .pt-picker-search {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--pt-text);
+      border: 0;
+      border-bottom: 1px solid var(--pt-border);
+      outline: none;
+    }
+    .pt-picker-list {
+      list-style: none;
+      margin: 0;
+      padding: 4px 0;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .pt-picker-group {
+      padding: 6px 12px 2px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--pt-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .pt-picker-option {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .pt-picker-option.is-active {
+      background: var(--pt-hover);
+    }
+    .pt-picker-option[aria-selected="true"] {
+      color: var(--pt-blue-dark);
+      font-weight: 600;
+    }
+    .pt-picker-empty {
+      padding: 10px 12px;
+      color: var(--pt-muted);
+    }
     .pt-toggle-row {
       display: flex;
       align-items: center;
@@ -225,10 +289,14 @@
 
   <div id="pt-langs" class="pt-langs">
     <label class="pt-label" for="pt-source">Source</label>
-    <select id="pt-source" class="pt-select"></select>
+    <div class="pt-picker" id="pt-source-picker">
+      <button type="button" id="pt-source" class="pt-select pt-picker-btn" aria-haspopup="listbox" aria-expanded="false"></button>
+    </div>
 
     <label class="pt-label" for="pt-target">Translate to</label>
-    <select id="pt-target" class="pt-select"></select>
+    <div class="pt-picker" id="pt-target-picker">
+      <button type="button" id="pt-target" class="pt-select pt-picker-btn" aria-haspopup="listbox" aria-expanded="false"></button>
+    </div>
   </div>
 
   <hr class="pt-divider" />
